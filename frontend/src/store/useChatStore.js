@@ -10,6 +10,7 @@ export const useChatStore = create((set, get) => ({
   isUsersLoading: false,
   isMessagesLoading: false,
   isSendingMessage: false,
+  isTyping: false,
 
   getUsers: async () => {
     set({ isUsersLoading: true });
@@ -46,7 +47,7 @@ export const useChatStore = create((set, get) => ({
     try {
       const response = await axiosInstance.post(
         `/messages/send/${selectedUser._id}`,
-        message,
+        message
       );
       set((state) => ({
         messages: [...state.messages, response.data],
@@ -65,21 +66,35 @@ export const useChatStore = create((set, get) => ({
     if (!selectedUser) return;
 
     const socket = useAuthStore.getState().socket;
-    console.log("connected to io", socket);
     socket.on("newMessage", (message) => {
-      console.log(message, selectedUser);
       if (message.senderId === selectedUser._id)
         set((state) => ({
           messages: [...state.messages, message],
         }));
+    });
+
+    socket.on("typing", ({ senderId, isTyping }) => {
+      if (senderId === selectedUser._id) set({ isTyping });
     });
   },
 
   unsubscribeFromMessages: () => {
     const socket = useAuthStore.getState().socket;
     socket.off("newMessage");
+    socket.off("typing");
   },
 
-  // todo:optimize this one later
   setSelectedUser: (user) => set({ selectedUser: user }),
+
+  typeToUser: (isTyping) => {
+    const socket = useAuthStore.getState().socket;
+    const currentUserId = useAuthStore.getState().authUser._id;
+    const { selectedUser } = get();
+    console.log(currentUserId, selectedUser._id, isTyping);
+    socket.emit("typing", {
+      senderId: currentUserId,
+      receiverId: selectedUser._id,
+      isTyping,
+    });
+  },
 }));

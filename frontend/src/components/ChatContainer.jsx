@@ -15,10 +15,10 @@ const ChatContainer = () => {
     selectedUser,
     subscribeToMessages,
     unsubscribeFromMessages,
+    isTyping,
   } = useChatStore();
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
-
   useEffect(() => {
     getMessages(selectedUser._id);
 
@@ -71,7 +71,9 @@ const ChatContainer = () => {
           messages.map((message) => (
             <div
               key={message._id}
-              className={`chat ${message.senderId === authUser._id ? "chat-end" : "chat-start"}`}
+              className={`chat ${
+                message.senderId === authUser._id ? "chat-end" : "chat-start"
+              }`}
               ref={messageEndRef}
             >
               <div className="chat-image avatar">
@@ -103,6 +105,17 @@ const ChatContainer = () => {
               </div>
             </div>
           ))
+        )}
+        {isTyping && (
+          <div className="chat chat-start">
+            <div className="chat-bubble bg-base-200">
+              <div className="flex gap-1">
+                <span className="animate-bounce">•</span>
+                <span className="animate-bounce delay-100">•</span>
+                <span className="animate-bounce delay-200">•</span>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 

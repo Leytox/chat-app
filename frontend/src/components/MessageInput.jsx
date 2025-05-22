@@ -1,13 +1,43 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { Image, Send, X } from "lucide-react";
 import toast from "react-hot-toast";
-
 const MessageInput = () => {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
-  const { sendMessage, isSendingMessage } = useChatStore();
+  const { sendMessage, isSendingMessage, typeToUser } = useChatStore();
+  const typingTimeoutRef = useRef(null);
+
+  const emitTypingStatus = (isTyping) => {
+    typeToUser(isTyping);
+  };
+
+  const handleTextChange = (e) => {
+    const newText = e.target.value;
+    setText(newText);
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Emit typing status
+    emitTypingStatus(true);
+
+    // Set new timeout to stop typing status
+    typingTimeoutRef.current = setTimeout(() => {
+      emitTypingStatus(false);
+    }, 1000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -76,7 +106,7 @@ const MessageInput = () => {
             className="w-full input input-bordered rounded-lg input-sm sm:input-md"
             placeholder="Type a message..."
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={handleTextChange}
           />
           <input
             type="file"
